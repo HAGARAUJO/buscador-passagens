@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<meta name="theme-color" content="#0a0e27">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Buscador de Passagens — Milhas + Passagens</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ─── RESET ─── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0a0e27;--surface:#111640;--card:#1a1f4a;--card-hover:#22285a;--border:rgba(99,102,241,.15);--text:#e2e8f0;--text-secondary:#94a3b8;--text-tertiary:#64748b;--accent:#6366f1;--accent-light:#818cf8;--green:#22c55e;--amber:#f59e0b;--red:#ef4444;--radius:12px;--radius-sm:8px;--radius-lg:20px}
+html,body{height:100%;font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body.auth-open{overflow:hidden}
+a{color:inherit;text-decoration:none}
+input,button,select,textarea{font-family:inherit;outline:none}
+
+/* ─── SCROLLBAR ─── */
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:10px}
+
+/* ─── AUTH OVERLAY ─── */
+.auth-overlay{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;background:rgba(5,8,22,.85);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);animation:fadeIn .4s ease}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideUp{from{opacity:0;transform:translateY(24px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
+.auth-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:2.5rem;width:90%;max-width:400px;animation:slideUp .45s cubic-bezier(.16,1,.3,1);position:relative;overflow:hidden}
+.auth-card::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(ellipse at 30% 0%,rgba(99,102,241,.06),transparent 60%);pointer-events:none}
+.auth-logo{text-align:center;margin-bottom:1.75rem}
+.auth-logo .icon{font-size:2.5rem;margin-bottom:.25rem}
+.auth-logo h1{font-size:1.5rem;font-weight:800;background:linear-gradient(135deg,#818cf8,#6366f1);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.auth-logo p{font-size:.8rem;color:var(--text-tertiary);margin-top:.25rem}
+.auth-form{display:flex;flex-direction:column;gap:1rem}
+.auth-form .field{display:flex;flex-direction:column;gap:.35rem}
+.auth-form .field label{font-size:.75rem;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.05em}
+.auth-form .field input{padding:.75rem 1rem;background:rgba(10,14,39,.6);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:.9rem;transition:.2s}
+.auth-form .field input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(99,102,241,.15)}
+.auth-form .field input::placeholder{color:var(--text-tertiary)}
+.auth-btn{padding:.85rem;background:linear-gradient(135deg,var(--accent),#4f46e5);border:none;border-radius:var(--radius-sm);color:#fff;font-weight:700;font-size:.95rem;cursor:pointer;transition:.2s;margin-top:.5rem}
+.auth-btn:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(99,102,241,.25)}
+.auth-btn:active{transform:scale(.98)}
+.auth-switch{text-align:center;margin-top:1rem;font-size:.8rem;color:var(--text-secondary)}
+.auth-switch a{color:var(--accent-light);cursor:pointer;font-weight:600}
+.auth-switch a:hover{text-decoration:underline}
+.auth-error{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);border-radius:var(--radius-sm);padding:.5rem .75rem;font-size:.8rem;color:var(--red);display:none}
+.auth-success{background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2);border-radius:var(--radius-sm);padding:.5rem .75rem;font-size:.8rem;color:var(--green);display:none}
+
+/* ─── APP LAYOUT ─── */
+.app{display:none;flex-direction:column;min-height:100vh}
+.app.active{display:flex}
+
+/* ─── HEADER ─── */
+.header{position:sticky;top:0;z-index:100;background:rgba(10,14,39,.85);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,.04);padding:0 1rem}
+.header-inner{max-width:960px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:56px}
+.header-left{display:flex;align-items:center;gap:.5rem}
+.header-logo{font-weight:800;font-size:1.1rem}
+.header-logo span{color:var(--accent-light)}
+.header-badge{font-size:.55rem;background:rgba(99,102,241,.15);color:var(--accent-light);padding:.15rem .45rem;border-radius:100px;font-weight:600;letter-spacing:.03em}
+.header-right{display:flex;align-items:center;gap:.5rem}
+.header-user{font-size:.8rem;color:var(--text-secondary);display:none}
+.header-user.show{display:block}
+.header-btn{background:none;border:none;color:var(--text-secondary);cursor:pointer;padding:.5rem;border-radius:var(--radius-sm);transition:.2s;font-size:.85rem}
+.header-btn:hover{background:rgba(255,255,255,.04);color:var(--text)}
+
+/* ─── HERO ─── */
+.hero{text-align:center;padding:2rem 1rem 1.5rem;max-width:960px;margin:0 auto;width:100%}
+.hero h1{font-size:clamp(1.5rem,4vw,2.5rem);font-weight:800;line-height:1.2;margin-bottom:.5rem}
+.hero h1 span{background:linear-gradient(135deg,var(--accent-light),#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hero p{color:var(--text-secondary);font-size:clamp(.85rem,2vw,1rem);max-width:560px;margin:0 auto;line-height:1.5}
+
+/* ─── SEARCH ─── */
+.search-section{max-width:960px;margin:0 auto;padding:0 1rem;width:100%}
+.search-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.25rem}
+.search-grid{display:flex;gap:.75rem;flex-wrap:wrap}
+.search-field{flex:1;min-width:120px}
+.search-field label{display:block;font-size:.65rem;font-weight:600;color:var(--text-tertiary);margin-bottom:.3rem;text-transform:uppercase;letter-spacing:.06em}
+.search-field input,.search-field select{width:100%;padding:.65rem .8rem;background:rgba(10,14,39,.6);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:.85rem;transition:.2s;-webkit-appearance:none;appearance:none}
+.search-field input:focus,.search-field select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(99,102,241,.12)}
+.search-field select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='%2364748b'%3E%3Cpath d='M1 1l5 5 5-5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right .75rem center;padding-right:2.25rem}
+.search-field select option{background:var(--surface);color:var(--text)}
+.search-swap{display:flex;align-items:center;padding:.55rem;background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.2);border-radius:var(--radius-sm);color:var(--accent-light);cursor:pointer;font-size:1rem;transition:.2s;align-self:end;margin-bottom:1px}
+.search-swap:hover{background:rgba(99,102,241,.2)}
+.search-submit{padding:.65rem 1.5rem;background:linear-gradient(135deg,var(--accent),#4f46e5);border:none;border-radius:var(--radius-sm);color:#fff;font-weight:700;font-size:.85rem;cursor:pointer;transition:.2s;white-space:nowrap;align-self:end}
+.search-submit:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(99,102,241,.25)}
+.search-submit:active{transform:scale(.97)}
+.quick-routes{display:flex;gap:.35rem;flex-wrap:wrap;margin-top:.75rem}
+.quick-btn{font-size:.7rem;padding:.25rem .65rem;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:100px;color:var(--text-tertiary);cursor:pointer;transition:.2s;border:none;font-family:inherit}
+.quick-btn:hover{background:rgba(99,102,241,.1);color:var(--accent-light)}
+
+/* ─── RESULTS ─── */
+.results-section{max-width:960px;margin:0 auto;padding:1.5rem 1rem 2rem;width:100%}
+.results-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem;flex-wrap:wrap;gap:.5rem}
+.results-header h2{font-size:1rem;font-weight:700}
+.results-header h2 small{font-weight:400;font-size:.8rem;color:var(--text-tertiary)}
+.results-tabs{display:flex;gap:.15rem;background:rgba(10,14,39,.5);border-radius:var(--radius-sm);padding:2px}
+.results-tab{font-size:.75rem;padding:.35rem .75rem;border-radius:6px;cursor:pointer;color:var(--text-tertiary);border:none;background:none;font-family:inherit;transition:.2s;font-weight:500}
+.results-tab.active{background:rgba(99,102,241,.15);color:var(--accent-light)}
+.results-tab:hover{color:var(--text)}
+
+.flight-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;margin-bottom:.5rem;transition:.2s;cursor:default}
+.flight-card:hover{background:var(--card-hover)}
+.flight-main{display:flex;justify-content:space-between;align-items:start;gap:.75rem;flex-wrap:wrap}
+.flight-info{display:flex;flex-direction:column;gap:.2rem}
+.flight-route{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap}
+.flight-route .code{font-weight:700;font-size:1rem}
+.flight-route .sep{color:var(--text-tertiary);font-size:.7rem}
+.flight-route .time{font-size:.75rem;color:var(--text-secondary)}
+.flight-airline{font-size:.7rem;color:var(--text-tertiary)}
+.flight-prices{display:flex;gap:1.25rem;align-items:center;flex-wrap:wrap}
+
+.price-cell{text-align:right}
+.price-label{font-size:.6rem;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+.price-value{font-size:1.1rem;font-weight:700}
+.price-value.brl{color:var(--green)}
+.price-value.miles{color:var(--amber)}
+.price-sub{font-size:.65rem;color:var(--text-tertiary)}
+.program-tag{display:inline-flex;font-size:.6rem;background:rgba(99,102,241,.1);color:var(--accent-light);padding:.15rem .5rem;border-radius:100px;font-weight:500;margin-top:.3rem}
+
+.avail-dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:.35rem}
+.avail-high{background:var(--green)}
+.avail-medium{background:var(--amber)}
+.avail-low{background:var(--red)}
+
+.alert-mini-btn{font-size:.7rem;padding:.3rem .65rem;background:transparent;border:1px solid var(--border);border-radius:100px;color:var(--text-secondary);cursor:pointer;transition:.2s;font-family:inherit}
+.alert-mini-btn:hover{background:rgba(99,102,241,.1);border-color:var(--accent);color:var(--accent-light)}
+
+.empty-state{text-align:center;padding:3rem 1rem;color:var(--text-tertiary)}
+.empty-state .icon{font-size:2.5rem;margin-bottom:.5rem;opacity:.5}
+.empty-state p{font-size:.85rem}
+
+/* ─── DEALS ─── */
+.deals-section{max-width:960px;margin:0 auto;padding:0 1rem 2rem;width:100%}
+.section-head{display:flex;align-items:center;gap:.5rem;margin-bottom:.75rem}
+.section-head h2{font-size:1rem;font-weight:700}
+.section-head small{font-size:.75rem;color:var(--text-tertiary);font-weight:400}
+.deal-card{display:flex;justify-content:space-between;align-items:center;background:linear-gradient(135deg,rgba(99,102,241,.04),rgba(139,92,246,.04));border:1px solid rgba(99,102,241,.1);border-radius:var(--radius);padding:.75rem 1rem;margin-bottom:.4rem;gap:.75rem;flex-wrap:wrap}
+.deal-left{display:flex;align-items:center;gap:.75rem;flex-wrap:wrap}
+.deal-route{font-weight:600;font-size:.85rem}
+.deal-meta{font-size:.7rem;color:var(--text-tertiary)}
+.deal-badge{font-size:.6rem;background:rgba(139,92,246,.15);color:#c4b5fd;padding:.15rem .45rem;border-radius:100px;font-weight:500}
+.deal-right{text-align:right}
+.deal-miles{color:var(--amber);font-weight:700;font-size:.9rem}
+.deal-tax{font-size:.65rem;color:var(--text-tertiary)}
+
+/* ─── PROGRAMS ─── */
+.programs-bar{display:flex;gap:.3rem;flex-wrap:wrap;margin-top:.5rem}
+.program-chip{font-size:.6rem;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:100px;padding:.15rem .5rem;color:var(--text-tertiary)}
+
+/* ─── FILTER PROGRAMS ─── */
+.filter-bar{display:none;flex-wrap:wrap;gap:.35rem;align-items:center;margin-bottom:.75rem;padding:.5rem .75rem;background:rgba(10,14,39,.4);border:1px solid var(--border);border-radius:var(--radius);font-size:.75rem}
+.filter-bar-label{font-size:.65rem;color:var(--text-tertiary);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-right:.25rem}
+.filter-check{display:inline-flex;align-items:center;gap:.25rem;cursor:pointer;padding:.2rem .5rem;border-radius:100px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);transition:.2s;user-select:none}
+.filter-check:hover{border-color:var(--accent)}
+.filter-check input{display:none}
+.filter-check.active{background:rgba(99,102,241,.12);border-color:rgba(99,102,241,.3);color:var(--accent-light)}
+.filter-check .dot{width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.6}
+
+/* ─── BUY BUTTON ─── */
+.buy-btn{font-size:.65rem;padding:.3rem .65rem;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.2);border-radius:100px;color:var(--green);cursor:pointer;transition:.2s;font-family:inherit;text-decoration:none;display:inline-block;line-height:1.4}
+.buy-btn:hover{background:rgba(34,197,94,.2);transform:translateY(-1px)}
+
+/* ─── ALERTS BANNER ─── */
+.alert-banner{background:linear-gradient(135deg,rgba(99,102,241,.05),rgba(139,92,246,.05));border:1px solid rgba(99,102,241,.1);border-radius:var(--radius);padding:1rem;margin-bottom:1.5rem}
+.alert-banner h3{font-size:.85rem;margin-bottom:.25rem}
+.alert-banner p{font-size:.75rem;color:var(--text-tertiary);margin-bottom:.5rem}
+.alert-tags{display:flex;gap:.35rem;flex-wrap:wrap}
+.alert-tag{font-size:.65rem;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:100px;padding:.2rem .6rem;color:var(--text-tertiary)}
+
+/* ─── FOOTER ─── */
+.footer{text-align:center;padding:1.5rem;color:var(--text-tertiary);font-size:.7rem;border-top:1px solid rgba(255,255,255,.04);margin-top:auto}
+
+/* ─── RESPONSIVE ─── */
+@media(max-width:640px){
+  .auth-card{padding:2rem 1.5rem;border-radius:var(--radius)}
+  .search-grid{flex-direction:column}
+  .search-field{min-width:100%}
+  .quick-btn{font-size:.65rem;padding:.2rem .55rem}
+  .flight-main{flex-direction:column}
+  .flight-prices{justify-content:flex-start;gap:.75rem}
+  .results-header{flex-direction:column;align-items:flex-start}
+  .deals-section{padding:0 .75rem 1.5rem}
+  .deal-card{flex-direction:column;align-items:flex-start}
+  .deal-right{text-align:left;width:100%}
+  .header-user.show{font-size:.7rem;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+}
+@media(max-width:400px){
+  .hero{padding:1.25rem .75rem 1rem}
+  .search-card{padding:1rem}
+  .flight-card{padding:.75rem}
+}
+@media(min-width:768px){
+  .search-card{padding:1.5rem}
+  .flight-prices{gap:2rem}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════ AUTH ═══════════ -->
+<div class="auth-overlay" id="authOverlay">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="icon">🛩️</div>
+      <h1>Buscador de Passagens</h1>
+      <p>Milhas + Passagens Aéreas</p>
+    </div>
+    <div class="auth-error" id="authError"></div>
+    <div class="auth-success" id="authSuccess"></div>
+    <form class="auth-form" id="authForm" autocomplete="off" onsubmit="return handleAuth(event)">
+      <div id="authFields">
+        <div class="field" id="nameField" style="display:none">
+          <label>Nome</label>
+          <input type="text" id="authName" placeholder="Seu nome" maxlength="60">
+        </div>
+        <div class="field">
+          <label>Email</label>
+          <input type="email" id="authEmail" placeholder="seu@email.com" autocomplete="email" required>
+        </div>
+        <div class="field">
+          <label>Senha</label>
+          <input type="password" id="authPass" placeholder="Mínimo 6 caracteres" autocomplete="current-password" required minlength="6">
+        </div>
+      </div>
+      <button type="submit" class="auth-btn" id="authBtn">Entrar</button>
+      <div class="auth-switch">
+        <span id="authToggleText">Não tem conta?</span> <a id="authToggleLink" onclick="toggleAuthMode()">Criar conta</a>
+      </div>
+      <div style="text-align:center;margin-top:.75rem;font-size:.7rem;color:var(--text-tertiary);line-height:1.4">
+        🔐 Seus dados ficam salvos no navegador.<br>
+        Em breve: verificação por código no email.
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ═══════════ APP ═══════════ -->
+<div class="app" id="app">
+
+<header class="header">
+  <div class="header-inner">
+    <div class="header-left">
+      <span class="header-logo">🛩️ <span>Fly</span>Tracker</span>
+      <span class="header-badge">BETA</span>
+    </div>
+    <div class="header-right">
+      <span class="header-user show" id="userName"></span>
+      <button class="header-btn" onclick="logout()" title="Sair">⏻</button>
+    </div>
+  </div>
+</header>
+
+<section class="hero">
+  <h1>Encontre o melhor preço<br>em <span>dinheiro ou milhas</span></h1>
+  <p>Compare tarifas comerciais com tarifas award de 10 programas de fidelidade. Dados reais de Smiles, TudoAzul, LATAM Pass, AAdvantage e mais.</p>
+</section>
+
+<section class="search-section">
+  <div class="search-card">
+    <div class="search-grid">
+      <div class="search-field">
+        <label>Origem</label>
+        <input type="text" id="origin" value="GIG" placeholder="Ex: GIG" maxlength="3" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase().replace(/[^A-Z]/g,'').slice(0,3)">
+      </div>
+      <button class="search-swap" onclick="swapCities()" title="Inverter rotas" type="button">⇄</button>
+      <div class="search-field">
+        <label>Destino</label>
+        <input type="text" id="dest" value="GRU" placeholder="Ex: GRU" maxlength="3" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase().replace(/[^A-Z]/g,'').slice(0,3)">
+      </div>
+      <div class="search-field">
+        <label>Classe</label>
+        <select id="cabin"><option value="economy">Econômica</option><option value="business">Executiva</option></select>
+      </div>
+      <button class="search-submit" onclick="doSearch()" type="button">Buscar ✈</button>
+    </div>
+    <div class="quick-routes">
+      <span style="font-size:.65rem;color:var(--text-tertiary);padding:.25rem 0">Rotas rápidas:</span>
+      <button class="quick-btn" onclick="goRoute('GRU','JFK')">GRU→JFK</button>
+      <button class="quick-btn" onclick="goRoute('GRU','MIA')">GRU→MIA</button>
+      <button class="quick-btn" onclick="goRoute('GIG','GRU')">GIG→GRU</button>
+      <button class="quick-btn" onclick="goRoute('GIG','REC')">GIG→REC</button>
+      <button class="quick-btn" onclick="goRoute('GRU','LHR')">GRU→LHR</button>
+      <button class="quick-btn" onclick="goRoute('GRU','CDG')">GRU→CDG</button>
+    </div>
+  </div>
+</section>
+
+<section class="results-section" id="results">
+  <div class="results-header">
+    <h2>Resultados <small id="routeInfo">— clique em Buscar</small></h2>
+    <div class="results-tabs">
+      <button class="results-tab active" onclick="switchView('combined')">💰 Milhas+R$</button>
+      <button class="results-tab" onclick="switchView('award')">🏆 Milhas</button>
+      <button class="results-tab" onclick="switchView('cash')">💵 Preço</button>
+    </div>
+  </div>
+  <div class="filter-bar" id="filterBar" style="display:none">
+    <span class="filter-bar-label">🎯 Programas</span>
+  </div>
+  <div id="flightList"></div>
+</section>
+
+<section class="deals-section">
+  <div class="section-head">
+    <h2>🔥 Ofertas em Milhas</h2>
+    <small>Curadas de fontes públicas</small>
+  </div>
+  <div id="dealsList"></div>
+</section>
+
+<section class="deals-section">
+  <div class="alert-banner">
+    <h3>🔔 Alertas Inteligentes</h3>
+    <p>Seja notificado quando abrir tarifa award no valor ideal para sua rota.</p>
+    <div class="alert-tags">
+      <span class="alert-tag">GRU→JFK • ≤ 30.000 mi</span>
+      <span class="alert-tag">GIG→MIA • ≤ 25.000 mi</span>
+      <span class="alert-tag">GRU→LHR • Executiva</span>
+      <span class="alert-tag">Quaquer • R$ ≤ 500</span>
+    </div>
+  </div>
+  <div class="section-head"><h2>🏅 Programas</h2><small>10 programas suportados</small></div>
+  <div id="programsList" class="programs-bar"></div>
+</section>
+
+<footer class="footer">Buscador de Passagens MVP • Dados reais de programas de fidelidade • Hermes Agent</footer>
+</div>
+
+<script>
+// ─── DATA ─── (initially seed, overwritten by API)
+let AWARD={
+"GIG-GRU":{economy:[["Smiles",5520,45,"high"],["TudoAzul",6868,45,"medium"],["LATAM Pass",9096,45,"medium"],["AAdvantage",7586,54,"high"]],business:[["Smiles",15720,65,"high"],["TudoAzul",16390,65,"high"],["LATAM Pass",19830,65,"medium"],["AAdvantage",15980,78,"medium"]]},
+"GRU-JFK":{economy:[["Smiles",36850,180,"high"],["TudoAzul",39150,180,"high"],["LATAM Pass",42550,180,"medium"],["AAdvantage",30980,216,"high"],["Delta",35550,216,"medium"],["United",34550,216,"high"]],business:[["Smiles",82812,280,"high"],["TudoAzul",73537,280,"high"],["LATAM Pass",94884,280,"medium"],["AAdvantage",61174,336,"low"],["Delta",74167,336,"medium"],["United",68264,336,"medium"]]},
+"GRU-MIA":{economy:[["Smiles",31980,180,"high"],["TudoAzul",33820,180,"high"],["LATAM Pass",36870,180,"medium"],["AAdvantage",26498,216,"high"]],business:[["Smiles",68970,280,"high"],["TudoAzul",73450,280,"high"],["LATAM Pass",78870,280,"medium"],["AAdvantage",52480,336,"medium"]]},
+"GRU-LHR":{economy:[["Smiles",52480,250,"medium"],["TudoAzul",54370,250,"medium"],["LATAM Pass",57730,250,"medium"],["BA Avios",46870,300,"high"]],business:[["Smiles",110480,400,"medium"],["TudoAzul",115480,400,"medium"],["LATAM Pass",125720,400,"low"],["BA Avios",78120,480,"high"]]},
+"GRU-CDG":{economy:[["Smiles",47230,250,"high"],["TudoAzul",50390,250,"high"],["LATAM Pass",52890,250,"medium"],["Flying Blue",26230,300,"high"]],business:[["Smiles",99680,400,"medium"],["TudoAzul",104920,400,"medium"],["LATAM Pass",115280,400,"low"],["Flying Blue",62840,480,"medium"]]},
+"GIG-REC":{economy:[["Smiles",12710,45,"high"],["TudoAzul",13630,45,"high"],["LATAM Pass",14910,45,"medium"]],business:[["Smiles",29820,65,"medium"],["TudoAzul",31640,65,"high"],["LATAM Pass",34040,65,"medium"]]},
+"GIG-FOR":{economy:[["Smiles",14890,45,"high"],["TudoAzul",15860,45,"medium"],["LATAM Pass",17050,45,"medium"]],business:[["Smiles",31980,65,"medium"],["TudoAzul",33980,65,"medium"],["LATAM Pass",36980,65,"low"]]},
+"GIG-POA":{economy:[["Smiles",8310,45,"high"],["TudoAzul",9480,45,"high"],["LATAM Pass",10630,45,"high"]],business:[["Smiles",19080,65,"high"],["TudoAzul",21000,65,"high"],["LATAM Pass",23120,65,"medium"]]},
+"GRU-BSB":{economy:[["Smiles",10470,45,"high"],["TudoAzul",11540,45,"high"],["LATAM Pass",12690,45,"high"]],business:[["Smiles",23140,65,"high"],["TudoAzul",25080,65,"high"],["LATAM Pass",27260,65,"medium"]]},
+"GRU-ATL":{economy:[["Smiles",36970,180,"medium"],["TudoAzul",39900,180,"medium"],["LATAM Pass",42470,180,"medium"],["Delta",31860,216,"high"]],business:[["Smiles",78960,280,"medium"],["TudoAzul",83960,280,"medium"],["LATAM Pass",89870,280,"low"],["Delta",63840,336,"high"]]},
+"GIG-MAD":{economy:[["Smiles",42090,250,"medium"],["TudoAzul",44120,250,"high"],["LATAM Pass",47130,250,"medium"],["Iberia",35760,300,"high"]],business:[["Smiles",89460,400,"medium"],["TudoAzul",94210,400,"medium"],["LATAM Pass",99850,400,"low"],["Iberia",63920,480,"high"]]},
+"GIG-LIS":{economy:[["Smiles",36980,250,"high"],["TudoAzul",38970,250,"high"],["LATAM Pass",41980,250,"medium"],["TAP",31860,300,"high"]],business:[["Smiles",78870,400,"high"],["TudoAzul",83970,400,"medium"],["LATAM Pass",89870,400,"low"],["TAP",58270,480,"high"]]},
+"GRU-ORD":{economy:[["Smiles",42950,180,"medium"],["TudoAzul",43960,180,"medium"],["LATAM Pass",47080,180,"medium"],["United",36780,216,"high"],["AAdvantage",36780,216,"medium"]],business:[["Smiles",89450,280,"medium"],["TudoAzul",94380,280,"medium"],["LATAM Pass",99850,280,"low"],["United",73450,336,"high"]]},
+"GRU-MCO":{economy:[["Smiles",34980,180,"high"],["TudoAzul",36120,180,"high"],["LATAM Pass",39120,180,"medium"],["AAdvantage",28980,216,"high"],["Delta",31450,216,"medium"],["United",32390,216,"high"]],business:[["Smiles",79650,280,"high"],["TudoAzol",83720,280,"medium"],["LATAM Pass",89530,280,"low"],["AAdvantage",56320,336,"medium"]]}
+};
+let COMM={
+"GIG-GRU":["LATAM","GOL","Azul","R$ 289","R$ 899"],
+"GRU-JFK":["LATAM","American","Delta","United","R$ 2.599","R$ 8.999"],
+"GRU-MIA":["LATAM","American","R$ 2.199","R$ 7.499"],
+"GRU-LHR":["LATAM","British Airways","R$ 4.499","R$ 14.999"],
+"GRU-CDG":["LATAM","Air France","R$ 3.999","R$ 12.999"],
+"GIG-REC":["Azul","LATAM","GOL","R$ 599","R$ 1.699"],
+"GRU-BSB":["LATAM","GOL","Azul","R$ 459","R$ 1.299"],
+"GIG-POA":["GOL","LATAM","Azul","R$ 399","R$ 1.199"],
+"GIG-MAD":["LATAM","Iberia","R$ 3.599","R$ 11.999"],
+"GIG-LIS":["TAP","LATAM","R$ 3.299","R$ 10.999"],
+"GRU-ATL":["Delta","LATAM","R$ 2.399","R$ 7.999"],
+"GRU-ORD":["United","American","LATAM","R$ 2.799","R$ 8.999"],
+"GRU-MCO":["LATAM","American","Delta","United","R$ 2.299","R$ 7.899"]
+};
+let DEALS=[
+{from:"ORD",to:"CUN",by:"JetBlue",miles:"7.000",tax:"US$ 62",prog:"JetBlue TrueBlue",exp:"15/08"},
+{from:"SLC",to:"CDG",by:"Air France/KLM",miles:"25.000",tax:"US$ 33",prog:"Flying Blue",exp:"20/08"},
+{from:"LAX",to:"MAD",by:"Virgin Atlantic",miles:"57.500",tax:"US$ 58",prog:"Virgin Atlantic",exp:"30/08",cls:"business"},
+{from:"JFK",to:"LHR",by:"Virgin Atlantic",miles:"29.000",tax:"US$ 688",prog:"Virgin Atlantic",exp:"01/09",cls:"business"},
+{from:"DTW",to:"LHR",by:"Virgin Atlantic",miles:"25.000",tax:"US$ 33",prog:"Virgin Atlantic",exp:"25/08"}
+];
+let PROGS=["Smiles (Gol)","TudoAzul (Azul)","LATAM Pass","AAdvantage","Delta SkyMiles","United MileagePlus","Flying Blue","BA Avios","Iberia Plus","TAP Miles&Go"];
+
+// ─── API DATA LOADER ───
+async function loadAPIData(){
+  try{
+    const r=await fetch('/api/all-data');
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const d=await r.json();
+    if(d.award&&Object.keys(d.award).length){AWARD=d.award}
+    if(d.commercial&&Object.keys(d.commercial).length){COMM=d.commercial}
+    if(d.deals&&d.deals.length){DEALS=d.deals}
+    console.log('✅ API data loaded:', d.source||'api');
+  }catch(e){
+    console.log('ℹ️ Using seed data (API unavailable):', e.message);
+  }
+}
+
+// ─── BUY LINKS ───
+const BUY_LINKS={
+  "Smiles":"https://www.smiles.com.br/passagens",
+  "TudoAzul":"https://www.voeazul.com.br/clube-tudoazul/milhas",
+  "LATAM Pass":"https://www.latamairlines.com/br/pt/milhas/resgate",
+  "AAdvantage":"https://www.aa.com/award",
+  "Delta SkyMiles":"https://www.delta.com/award",
+  "United MileagePlus":"https://www.united.com/award",
+  "Flying Blue":"https://www.flyingblue.com/",
+  "BA Avios":"https://www.britishairways.com/ba-redeem",
+  "Iberia Plus":"https://www.iberia.com/award",
+  "TAP Miles&Go":"https://www.flytap.com/miles-and-go"
+};
+
+let view='combined',isLogin=true,currentUser=null;
+let activePrograms=null;
+const API='';
+
+// ─── AUTH ───
+function toggleAuthMode(){
+  isLogin=!isLogin;
+  document.getElementById('nameField').style.display=isLogin?'none':'block';
+  document.getElementById('authBtn').textContent=isLogin?'Entrar':'Criar conta';
+  document.getElementById('authToggleText').textContent=isLogin?'Não tem conta?':'Já tem conta?';
+  document.getElementById('authToggleLink').textContent=isLogin?'Criar conta':'Fazer login';
+  document.getElementById('authError').style.display='none';
+}
+
+async function handleAuth(e){
+  e.preventDefault();
+  const email=document.getElementById('authEmail').value.trim();
+  const pass=document.getElementById('authPass').value;
+  const name=document.getElementById('authName').value.trim()||email.split('@')[0];
+  const err=document.getElementById('authError');
+  const ok=document.getElementById('authSuccess');
+  err.style.display='none';ok.style.display='none';
+
+  if(isLogin){
+    try{
+      const r=await fetch(API+'/api/login',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({email,password:pass})
+      });
+      const d=await r.json();
+      if(!r.ok){err.textContent=d.detail||'Erro ao fazer login';err.style.display='block';return}
+      currentUser=d.user;
+      localStorage.setItem('flytracker_token',d.token);
+      document.getElementById('userName').textContent=d.user.name;
+      enterApp();
+    }catch(e){err.textContent='Erro de conexão com o servidor';err.style.display='block'}
+  }else{
+    if(pass.length<6){err.textContent='A senha precisa ter no mínimo 6 caracteres.';err.style.display='block';return}
+    if(!name){err.textContent='Informe seu nome.';err.style.display='block';return}
+    try{
+      const r=await fetch(API+'/api/register',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({name,email,password:pass})
+      });
+      const d=await r.json();
+      if(!r.ok){err.textContent=d.detail||'Erro ao criar conta';err.style.display='block';return}
+      currentUser=d.user;
+      localStorage.setItem('flytracker_token',d.token);
+      ok.textContent='Conta criada com sucesso!';ok.style.display='block';
+      setTimeout(()=>{document.getElementById('userName').textContent=d.user.name;enterApp()},600);
+    }catch(e){err.textContent='Erro de conexão com o servidor';err.style.display='block'}
+  }
+}
+
+function enterApp(){
+  document.getElementById('authOverlay').style.display='none';
+  document.body.classList.remove('auth-open');
+  document.getElementById('app').classList.add('active');
+  document.getElementById('userName').classList.add('show');
+}
+
+async function logout(){
+  const token=localStorage.getItem('flytracker_token');
+  if(token){try{await fetch(API+'/api/logout?token='+encodeURIComponent(token),{method:'POST'})}catch(e){}}
+  localStorage.removeItem('flytracker_token');
+  currentUser=null;
+  document.getElementById('app').classList.remove('active');
+  document.getElementById('authOverlay').style.display='flex';
+  document.body.classList.add('auth-open');
+  document.getElementById('authEmail').value='';
+  document.getElementById('authPass').value='';
+  document.getElementById('userName').classList.remove('show');
+}
+
+// ─── APP ───
+function swapCities(){const o=document.getElementById('origin'),d=document.getElementById('dest');[o.value,d.value]=[d.value,o.value]}
+function goRoute(o,d){document.getElementById('origin').value=o;document.getElementById('dest').value=d;doSearch()}
+function switchView(v){view=v;document.querySelectorAll('.results-tab').forEach(b=>b.classList.remove('active'));document.querySelectorAll('.results-tab')[['combined','award','cash'].indexOf(v)].classList.add('active');renderFilters();render()}
+
+// ─── FILTER ───
+function renderFilters(){
+  const s=window._s;
+  if(!s){const bar=document.getElementById('filterBar');bar.style.display='none';return}
+  const key=s.origin+'-'+s.dest,rev=s.dest+'-'+s.origin;
+  const aw=AWARD[key]||AWARD[rev];
+  const cab=s.cabin;
+  const bar=document.getElementById('filterBar');
+  if(!aw||view==='cash'){
+    bar.style.display='none';
+    return;
+  }
+  const progs=(aw[cab]||aw.economy).map(x=>x[0]).filter((v,i,a)=>a.indexOf(v)===i);
+  if(progs.length<2){bar.style.display='none';return}
+  if(!activePrograms) activePrograms=[...progs];
+  bar.style.display='flex';
+  bar.innerHTML='<span class="filter-bar-label">🎯 Programas</span>'+
+    progs.map(p=>{
+      const active=activePrograms.includes(p);
+      return `<label class="filter-check${active?' active':''}" onclick="toggleFilter('${p}')"><span class="dot" style="background:${active?'var(--accent-light)':'var(--text-tertiary)'}"></span> ${p}</label>`;
+    }).join('');
+}
+function toggleFilter(prog){
+  if(!activePrograms) return;
+  const idx=activePrograms.indexOf(prog);
+  if(idx>-1) activePrograms.splice(idx,1); else activePrograms.push(prog);
+  if(!activePrograms.length) activePrograms=[prog];
+  render();
+  renderFilters();
+}
+
+function doSearch(){
+  const o=document.getElementById('origin').value.trim(),d=document.getElementById('dest').value.trim();
+  document.getElementById('routeInfo').textContent=`— ${o}→${d} (${document.getElementById('cabin').value==='business'?'Exec':'Econ'})`;
+  window._s={origin:o,dest:d,cabin:document.getElementById('cabin').value};
+  activePrograms=null;
+  renderFilters();
+  render();
+}
+
+function render(){
+  const s=window._s||{origin:'GIG',dest:'GRU',cabin:'economy'};
+  const key=s.origin+'-'+s.dest,rev=s.dest+'-'+s.origin;
+  const aw=AWARD[key]||AWARD[rev],cm=COMM[key]||COMM[rev];
+  const cab=s.cabin;
+
+  let html='';
+  if(view!=='cash'&&aw){
+    let r=(aw[cab]||aw.economy).sort((a,b)=>a[1]-b[1]);
+    if(activePrograms) r=r.filter(x=>activePrograms.includes(x[0]));
+    for(const x of r){
+      const cls='avail-'+x[3];
+      const buyUrl=(BUY_LINKS[x[0]]||'').replace(/\{o\}/g,s.origin).replace(/\{d\}/g,s.dest);
+      html+=`<div class="flight-card">
+        <div class="flight-main">
+          <div class="flight-info">
+            <div class="flight-route">
+              <span class="code">${s.origin}</span>
+              <span class="sep">✈</span>
+              <span class="code">${s.dest}</span>
+              <span class="time">${cab==='business'?'Executiva':'Econômica'}</span>
+            </div>
+            <div class="flight-airline"><span class="${cls}" style="display:inline-flex;align-items:center"><span class="avail-dot ${x[3]}"></span>${x[3]==='high'?'Disponível':x[3]==='medium'?'Média':'Baixa'} disp.</span></div>
+          </div>
+          <div class="flight-prices">
+            <div class="price-cell">
+              <div class="price-label">🏆 Milhas</div>
+              <div class="price-value miles">${x[1].toLocaleString()}</div>
+              <div class="price-sub">+ R$ ${x[2]} taxas</div>
+            </div>
+            <div style="display:flex;gap:.35rem;align-items:center">
+              ${buyUrl?`<a href="${buyUrl}" target="_blank" rel="noopener" class="buy-btn">Comprar ↗</a>`:''}
+              <button class="alert-mini-btn" onclick="alert('🔔 Alerta criado para ${s.origin}→${s.dest} com ${x[0]}!')">🔔 Alerta</button>
+            </div>
+          </div>
+        </div>
+        <div class="program-tag">${x[0]}</div>
+      </div>`;
+    }
+  }
+
+  if(view!=='award'&&cm){
+    const idx=cab==='business'?5:4;
+    const price=cm[idx]||cm[4];
+    const a=cm.slice(0,cm.length-2).join(', ');
+    html+=`<div class="flight-card" style="border-color:rgba(34,197,94,.15)">
+      <div class="flight-main">
+        <div class="flight-info">
+          <div class="flight-route">
+            <span class="code">${s.origin}</span><span class="sep">✈</span><span class="code">${s.dest}</span>
+            <span class="time">${cab==='business'?'Executiva':'Econômica'}</span>
+          </div>
+          <div class="flight-airline">💰 Tarifa comercial • ${a}</div>
+        </div>
+        <div class="flight-prices">
+          <div class="price-cell">
+            <div class="price-label">💵 Preço</div>
+            <div class="price-value brl">${price}</div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  if(!html) html=`<div class="empty-state"><div class="icon">🔍</div><p>Nenhum resultado para ${s.origin}→${s.dest}. Tente outra rota.</p></div>`;
+  document.getElementById('flightList').innerHTML=html;
+}
+
+// Render deals
+document.getElementById('dealsList').innerHTML=DEALS.map(d=>
+  `<div class="deal-card">
+    <div class="deal-left">
+      <span class="deal-route">${d.from} → ${d.to}</span>
+      <span class="deal-meta">${d.by} • ${d.cls||'Econômica'}</span>
+      <span class="deal-badge">${d.prog}</span>
+    </div>
+    <div class="deal-right">
+      <div class="deal-miles">${d.miles} milhas</div>
+      <div class="deal-tax">+ ${d.tax} • até ${d.exp}</div>
+    </div>
+  </div>`
+).join('');
+
+document.getElementById('programsList').innerHTML=PROGS.map(p=>`<span class="program-chip">${p}</span>`).join('');
+
+// Init — check saved session first
+(async function(){
+  const token=localStorage.getItem('flytracker_token');
+  if(token){
+    try{
+      const r=await fetch(API+'/api/me?token='+encodeURIComponent(token));
+      if(r.ok){
+        const user=await r.json();
+        currentUser=user;
+        document.getElementById('userName').textContent=user.name;
+        document.body.classList.remove('auth-open');
+        document.getElementById('app').classList.add('active');
+        document.getElementById('userName').classList.add('show');
+        return;
+      }
+    }catch(e){}
+    localStorage.removeItem('flytracker_token');
+  }
+  document.body.classList.add('auth-open');
+})();
+
+window.addEventListener('load',async()=>{
+  await loadAPIData();
+  window._s={origin:'GIG',dest:'GRU',cabin:'economy'};
+  document.getElementById('routeInfo').textContent='— GIG→GRU (Econ)';
+  render();
+  renderFilters();
+});
+</script>
+</body>
+</html>
