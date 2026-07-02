@@ -12,7 +12,7 @@ try:
     from composio import Composio
     HAS_COMPOSIO = bool(os.getenv("COMPOSIO_API_KEY", ""))
 except ImportError:
-    print("⚠️ composio not installed")
+    print("[ALERTA] composio not installed")
 
 SQL_CREATE_ALERTAS = """
 CREATE TABLE IF NOT EXISTS alertas (
@@ -37,9 +37,9 @@ async def init_alertas_table(engine):
         from sqlalchemy import text
         with engine.begin() as conn:
             conn.execute(text(SQL_CREATE_ALERTAS))
-        print("✅ alertas table ready")
+        print("[INFO] alertas table ready")
     except Exception as e:
-        print(f"⚠️ Could not create alertas table: {e}")
+        print(f"[ALERTA] Could not create alertas table: {e}")
 
 
 def extract_visible_text(html: str) -> str:
@@ -112,12 +112,12 @@ def parse_alert_email(subject: str, body: str) -> list[dict]:
 async def check_alerts(redis_client, engine):
     """Fetch unread Gmail emails, parse, store."""
     if not HAS_COMPOSIO:
-        print("ℹ️ Composio not configured — skipping alert check")
+        print("[ALERTA] Composio not configured — skipping alert check")
         return
 
     try:
         composio = Composio()
-        print("📧 Checking Gmail for alert emails...")
+        print("[INFO] Checking Gmail for alert emails...")
 
         result = composio.tools.execute(
             slug="GMAIL_FETCH_EMAILS",
@@ -129,14 +129,14 @@ async def check_alerts(redis_client, engine):
         if isinstance(result, dict):
             messages = result.get("data", {}).get("messages", [])
         else:
-            print(f"⚠️ Unexpected response type: {type(result)}")
+            print(f"[ERROR] Unexpected response type: {type(result)}")
             return
 
         if not messages:
-            print("ℹ️ No new emails found")
+            print("[INFO] No new emails found")
             return
 
-        print(f"📧 Found {len(messages)} email(s) to process")
+        print(f"[INFO] Found {len(messages)} email(s) to process")
         from sqlalchemy import text
         new_alerts = 0
         msg_ids_to_mark = []
@@ -144,11 +144,11 @@ async def check_alerts(redis_client, engine):
         for msg in messages:
             subject = msg.get("subject", "") or ""
             msg_id = msg.get("messageId", "") or msg.get("id", "")
-            print(f"  → Subject: {subject[:80]}")
+            print(f"[INFO]   → Subject: {subject[:80]}")
 
             alerts = parse_alert_email(subject, msg.get("messageText", "") or msg.get("snippet", "") or "")
             if not alerts:
-                print("     ⏭️  Not an award alert")
+                print("[INFO]     ⏭️ Not an award alert")
                 continue
 
             with engine.connect() as conn:
@@ -158,7 +158,7 @@ async def check_alerts(redis_client, engine):
                 ).fetchone()
 
             if existing:
-                print("     ⏭️  Already processed")
+                print("[INFO]     ⏭️ Already processed")
                 continue
 
             for alert in alerts:
@@ -177,7 +177,7 @@ async def check_alerts(redis_client, engine):
                     detail += f" {alert['milhas_max']}mi"
                 if alert["programa"]:
                     detail += f" {alert['programa']}"
-                print(f"     ✅ {detail}")
+                print(f"[ALERTA]     ✅ {detail}")
             msg_ids_to_mark.append(msg_id)
 
         if msg_ids_to_mark:
@@ -188,14 +188,14 @@ async def check_alerts(redis_client, engine):
                     user_id=USER_ID,
                     dangerously_skip_version_check=True,
                 )
-                print(f"     📭 {len(msg_ids_to_mark)} email(s) marked as read")
+                print(f"[INFO]     📭 {len(msg_ids_to_mark)} email(s) marked as read")
             except Exception as e:
-                print(f"     ⚠️ Could not mark as read: {e}")
+                print(f"[ERROR]     ⚠️ Could not mark as read: {e}")
 
-        print(f"✅ Alert check complete — {new_alerts} new alerts stored")
+        print(f"[INFO] ✅ Alert check complete — {new_alerts} new alerts stored")
 
     except Exception as e:
-        print(f"⚠️ Alert check failed: {e}")
+        print(f"[ERROR] ⚠️ Alert check failed: {e}")
 
 
 async def alert_loop(redis_client, engine):
