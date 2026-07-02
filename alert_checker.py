@@ -111,37 +111,41 @@ def parse_alert_email(subject: str, body: str) -> list[dict]:
 async def check_alerts(redis_client, engine):
     """Main function: fetch unread Gmail emails, parse, store."""
     if not HAS_COMPOSIO or not COMPOSIO_API_KEY:
-        logger.info("ℹ️ Composio not configured — skipping alert check")
+        print("ℹ️ Composio not configured — skipping alert check")
         return
 
     try:
         composio_client = Composio(api_key=COMPOSIO_API_KEY)
 
-        # Use the MCP-style tool call via Composio SDK
-        result = composio_client.execute(
+        print("📧 Checking Gmail for alert emails...")
+        result = composio_client.actions.execute(
             action="GMAIL_FETCH_EMAILS",
             params={
                 "user_id": "me",
                 "max_results": 10,
-            }
+            },
+            entity_id="default",
         )
 
         messages = result.get("data", {}).get("messages", [])
         if not messages:
-            logger.info("ℹ️ No new emails found")
+            print("ℹ️ No new emails found")
             return
 
+        print(f"📧 Found {len(messages)} email(s) to process")
         from sqlalchemy import text
         new_alerts = 0
         for msg in messages:
             subject = msg.get("subject", "") or ""
             body = msg.get("body_plain", "") or msg.get("snippet", "") or ""
+            msg_id = msg.get("id", "")
 
+            print(f"  → Subject: {subject[:80]}")
             alerts = parse_alert_email(subject, body)
             if not alerts:
+                print(f"     ⏭️  No alert data found in this email")
                 continue
 
-            msg_id = msg.get("id")
             # Check if already processed
             with engine.connect() as conn:
                 existing = conn.execute(
@@ -150,6 +154,7 @@ async def check_alerts(redis_client, engine):
                 ).fetchone()
 
             if existing:
+                print(f"     ⏭️  Already processed")
                 continue
 
             for alert in alerts:
@@ -170,24 +175,27 @@ async def check_alerts(redis_client, engine):
                         }
                     )
                 new_alerts += 1
+                print(f"     ✅ Saved: {alert['origem']}→{alert['destino']} {alert['milhas_max']}mi")
 
-            # Mark as processed via Gmail label
+            # Mark as read
             try:
-                composio_client.execute(
+                composio_client.actions.execute(
                     action="GMAIL_MODIFY_MESSAGE",
                     params={
                         "user_id": "me",
                         "id": msg_id,
                         "remove_labels": ["UNREAD"],
-                    }
+                    },
+                    entity_id="default",
                 )
-            except Exception:
-                pass
+                print(f"     📭 Marked as read")
+            except Exception as e:
+                print(f"     ⚠️ Could not mark as read: {e}")
 
-        logger.info(f"✅ Alert check complete — {new_alerts} new alerts stored")
+        print(f"✅ Alert check complete — {new_alerts} new alerts stored")
 
     except Exception as e:
-        logger.error(f"⚠️ Alert check failed: {e}")
+        print(f"⚠️ Alert check failed: {e}")
 
 
 async def alert_loop(redis_client, engine):
