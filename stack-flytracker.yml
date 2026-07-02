@@ -2,7 +2,7 @@ version: "3.7"
 
 services:
   buscador:
-    image: flytracker-api:latest
+    image: buscador-api:latest
     hostname: "{{.Service.Name}}.{{.Task.Slot}}"
     networks:
       - network_swarm_public
