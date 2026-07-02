@@ -9,6 +9,7 @@ services:
     environment:
       - PORT=8000
       - PG_DSN=postgresql+pg8000://auth_api:auth_api_2026_seguro@postgres_postgres:5432/buscador_passagens
+      - AWARD_PG_DSN=postgresql://auth_api:auth_api_2026_seguro@postgres_postgres:5432/buscador_passagens
       - REDIS_URL=redis://redis:6379/12
     deploy:
       mode: replicated

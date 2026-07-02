@@ -49,7 +49,9 @@ def _normalize(prog: Optional[str]) -> str:
     if not prog: return "Unknown"
     return PROG_NAME_MAP.get(prog.strip().lower(), prog.strip())
 
-def _availability(seats: int = 0, miles: int = 0) -> str:
+def _availability(seats=None, miles=None) -> str:
+    seats = seats or 0
+    miles = miles or 0
     if seats >= 8: return "high"
     if seats >= 3: return "medium"
     if seats > 0: return "low"
