@@ -171,6 +171,23 @@ input,button,select,textarea{font-family:inherit;outline:none}
 /* ─── FOOTER ─── */
 .footer{text-align:center;padding:1.5rem;color:var(--text-tertiary);font-size:.7rem;border-top:1px solid rgba(255,255,255,.04);margin-top:auto}
 
+/* ─── NEW FIELDS ─── */
+.flight-details{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.35rem;font-size:.72rem}
+.detail-chip{display:inline-flex;align-items:center;gap:.25rem;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:6px;padding:.15rem .5rem;color:var(--text-secondary)}
+.detail-chip .label{color:var(--text-tertiary);font-weight:500}
+.detail-chip .val{font-weight:600;color:var(--text)}
+.detail-chip .val.seats{color:var(--accent-light)}
+.detail-chip .val.direct{color:var(--green)}
+.detail-chip .val.date{color:var(--amber)}
+
+.cabin-badge{font-size:.6rem;background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.15);border-radius:100px;padding:.1rem .5rem;color:var(--accent-light);font-weight:500;margin-left:.4rem}
+.flight-card.compact .flight-main{align-items:flex-start}
+.flight-card.compact .flight-info{flex:1}
+
+@media(max-width:640px){
+  .flight-details{flex-direction:column;gap:.25rem}
+}
+
 /* ─── RESPONSIVE ─── */
 @media(max-width:640px){
   .auth-card{padding:2rem 1.5rem;border-radius:var(--radius)}
@@ -291,7 +308,10 @@ input,button,select,textarea{font-family:inherit;outline:none}
     <h2>Resultados <small id="routeInfo">— clique em Buscar</small></h2>
     <div class="results-tabs">
       <button class="results-tab active" onclick="switchView('combined')">💰 Milhas+R$</button>
-      <button class="results-tab" onclick="switchView('award')">🏆 Milhas</button>
+      <button class="results-tab" onclick="switchView('economy')">🪑 Econômica</button>
+      <button class="results-tab" onclick="switchView('premium_economy')">⭐ Premium</button>
+      <button class="results-tab" onclick="switchView('business')">💼 Executiva</button>
+      <button class="results-tab" onclick="switchView('first_class')">👑 Primeira</button>
       <button class="results-tab" onclick="switchView('cash')">💵 Preço</button>
     </div>
   </div>
@@ -475,7 +495,7 @@ async function logout(){
 // ─── APP ───
 function swapCities(){const o=document.getElementById('origin'),d=document.getElementById('dest');[o.value,d.value]=[d.value,o.value]}
 function goRoute(o,d){document.getElementById('origin').value=o;document.getElementById('dest').value=d;doSearch()}
-function switchView(v){view=v;document.querySelectorAll('.results-tab').forEach(b=>b.classList.remove('active'));document.querySelectorAll('.results-tab')[['combined','award','cash'].indexOf(v)].classList.add('active');renderFilters();render()}
+function switchView(v){view=v;document.querySelectorAll('.results-tab').forEach(b=>b.classList.remove('active'));const tabs=document.querySelectorAll('.results-tab');const idx=['combined','economy','premium_economy','business','first_class','cash'].indexOf(v);if(idx>=0&&tabs[idx])tabs[idx].classList.add('active');renderFilters();render()}
 
 // ─── FILTER ───
 function renderFilters(){
@@ -489,7 +509,16 @@ function renderFilters(){
     bar.style.display='none';
     return;
   }
-  const progs=(aw[cab]||aw.economy).map(x=>x[0]).filter((v,i,a)=>a.indexOf(v)===i);
+  // In combined view, collect programs from all cabin types
+  let allItems=[];
+  if(view==='combined'){
+    for(const c of['economy','premium_economy','business','first_class']){
+      if(aw[c]) allItems=allItems.concat(aw[c]);
+    }
+  }else{
+    allItems=(aw[view]||aw.economy)||[];
+  }
+  const progs=allItems.map(x=>Array.isArray(x)?x[0]:x.program).filter((v,i,a)=>a.indexOf(v)===i);
   if(progs.length<2){bar.style.display='none';return}
   if(!activePrograms) activePrograms=[...progs];
   bar.style.display='flex';
@@ -517,6 +546,21 @@ function doSearch(){
   render();
 }
 
+const CABIN_LABELS={economy:'Econômica',premium_economy:'Premium Econ',business:'Executiva',first_class:'Primeira'};
+const CABIN_ICONS={economy:'🪑',premium_economy:'⭐',business:'💼',first_class:'👑'};
+
+// Helper: get field from item (handles both array and object formats)
+function itemVal(item, idx, key){
+  if(Array.isArray(item)) return item[idx];
+  return item[key];
+}
+
+function formatMiles(v){return v!==null&&v!==undefined?Number(v).toLocaleString():'—'}
+function formatSeats(v){return v!==null&&v!==undefined&&v>0?v:'—'}
+function formatTaxes(v){return v!==null&&v!==undefined?Number(v).toFixed(2):'—'}
+function formatCarriers(v){return v||'—'}
+function formatDate(v){return v||'—'}
+
 function render(){
   const s=window._s||{origin:'GIG',dest:'GRU',cabin:'economy'};
   const key=s.origin+'-'+s.dest,rev=s.dest+'-'+s.origin;
@@ -524,41 +568,128 @@ function render(){
   const cab=s.cabin;
 
   let html='';
-  if(view!=='cash'&&aw){
-    let r=(aw[cab]||aw.economy).sort((a,b)=>a[1]-b[1]);
-    if(activePrograms) r=r.filter(x=>activePrograms.includes(x[0]));
-    for(const x of r){
-      const cls='avail-'+x[3];
-      const buyUrl=(BUY_LINKS[x[0]]||'').replace(/\{o\}/g,s.origin).replace(/\{d\}/g,s.dest);
-      html+=`<div class="flight-card">
+
+  // Combined view: show all cabin types
+  if(view==='combined'&&aw){
+    const cabOrder=['economy','premium_economy','business','first_class'];
+    for(const c of cabOrder){
+      let items=aw[c];
+      if(!items||!items.length) continue;
+      // Sort by miles
+      if(Array.isArray(items[0])) items=[...items].sort((a,b)=>a[1]-b[1]);
+      else items=[...items].sort((a,b)=>a.miles-b.miles);
+      if(activePrograms) items=items.filter(x=>itemVal(x,0,'program')&&activePrograms.includes(itemVal(x,0,'program')));
+      for(const x of items){
+        const prog=itemVal(x,0,'program');
+        const miles=itemVal(x,1,'miles');
+        const taxes=itemVal(x,2,'taxes');
+        const avail=itemVal(x,3,'availability');
+        const seats=Array.isArray(x)?null:itemVal(x,null,'seats');
+        const direct_miles=Array.isArray(x)?null:itemVal(x,null,'direct_miles');
+        const carriers=Array.isArray(x)?null:itemVal(x,null,'carriers');
+        const date=Array.isArray(x)?null:itemVal(x,null,'date');
+        const cls='avail-'+(avail||'low');
+        const buyUrl=(BUY_LINKS[prog]||'').replace(/\{o\}/g,s.origin).replace(/\{d\}/g,s.dest);
+        html+=`<div class="flight-card compact">
+          <div class="flight-main">
+            <div class="flight-info">
+              <div class="flight-route">
+                <span class="code">${s.origin}</span>
+                <span class="sep">✈</span>
+                <span class="code">${s.dest}</span>
+                <span class="time">${CABIN_ICONS[c]||''} ${CABIN_LABELS[c]||c}</span>
+              </div>
+              <div class="flight-airline">
+                <span class="${cls}" style="display:inline-flex;align-items:center">
+                  <span class="avail-dot ${avail||'low'}"></span>
+                  ${avail==='high'?'Disponível':avail==='medium'?'Média':'Baixa'}
+                </span>
+                <span class="cabin-badge">${prog}</span>
+              </div>
+              <div class="flight-details">
+                ${seats!==null?`<span class="detail-chip"><span class="label">Assentos:</span> <span class="val seats">${formatSeats(seats)}</span></span>`:''}
+                ${direct_miles?`<span class="detail-chip"><span class="label">Milhas direto:</span> <span class="val direct">${formatMiles(direct_miles)}</span></span>`:''}
+                ${carriers?`<span class="detail-chip"><span class="label">Cia:</span> <span class="val">${formatCarriers(carriers)}</span></span>`:''}
+                ${date?`<span class="detail-chip"><span class="label">Data:</span> <span class="val date">${formatDate(date)}</span></span>`:''}
+              </div>
+            </div>
+            <div class="flight-prices">
+              <div class="price-cell">
+                <div class="price-label">🏆 Milhas</div>
+                <div class="price-value miles">${formatMiles(miles)}</div>
+                <div class="price-sub">+ R$ ${formatTaxes(taxes)} taxas</div>
+              </div>
+              <div style="display:flex;gap:.35rem;align-items:center">
+                ${buyUrl?`<a href="${buyUrl}" target="_blank" rel="noopener" class="buy-btn">Comprar ↗</a>`:''}
+                <button class="alert-mini-btn" onclick="alert('🔔 Alerta criado para ${s.origin}→${s.dest} com ${prog}!')">🔔</button>
+              </div>
+            </div>
+          </div>
+        </div>`;
+      }
+    }
+  }
+
+  // Single cabin view (economy, premium_economy, business, first_class)
+  if(view!=='combined'&&view!=='cash'&&aw){
+    const c=view; // view name matches cabin key
+    let items=aw[c]||(view==='economy'?aw.economy:null)||[];
+    if(!items||!items.length) items=aw.economy||[];
+    if(Array.isArray(items[0])) items=[...items].sort((a,b)=>a[1]-b[1]);
+    else items=[...items].sort((a,b)=>a.miles-b.miles);
+    if(activePrograms) items=items.filter(x=>itemVal(x,0,'program')&&activePrograms.includes(itemVal(x,0,'program')));
+    for(const x of items){
+      const prog=itemVal(x,0,'program');
+      const miles=itemVal(x,1,'miles');
+      const taxes=itemVal(x,2,'taxes');
+      const avail=itemVal(x,3,'availability');
+      const seats=Array.isArray(x)?null:itemVal(x,null,'seats');
+      const direct_miles=Array.isArray(x)?null:itemVal(x,null,'direct_miles');
+      const carriers=Array.isArray(x)?null:itemVal(x,null,'carriers');
+      const date=Array.isArray(x)?null:itemVal(x,null,'date');
+      const cls='avail-'+(avail||'low');
+      const buyUrl=(BUY_LINKS[prog]||'').replace(/\{o\}/g,s.origin).replace(/\{d\}/g,s.dest);
+      html+=`<div class="flight-card compact">
         <div class="flight-main">
           <div class="flight-info">
             <div class="flight-route">
               <span class="code">${s.origin}</span>
               <span class="sep">✈</span>
               <span class="code">${s.dest}</span>
-              <span class="time">${cab==='business'?'Executiva':'Econômica'}</span>
+              <span class="time">${CABIN_ICONS[view]||''} ${CABIN_LABELS[view]||view}</span>
             </div>
-            <div class="flight-airline"><span class="${cls}" style="display:inline-flex;align-items:center"><span class="avail-dot ${x[3]}"></span>${x[3]==='high'?'Disponível':x[3]==='medium'?'Média':'Baixa'} disp.</span></div>
+            <div class="flight-airline">
+              <span class="${cls}" style="display:inline-flex;align-items:center">
+                <span class="avail-dot ${avail||'low'}"></span>
+                ${avail==='high'?'Disponível':avail==='medium'?'Média':'Baixa'}
+              </span>
+              <span class="cabin-badge">${prog}</span>
+            </div>
+            <div class="flight-details">
+              ${seats!==null?`<span class="detail-chip"><span class="label">Assentos:</span> <span class="val seats">${formatSeats(seats)}</span></span>`:''}
+              ${direct_miles?`<span class="detail-chip"><span class="label">Milhas direto:</span> <span class="val direct">${formatMiles(direct_miles)}</span></span>`:''}
+              ${carriers?`<span class="detail-chip"><span class="label">Cia:</span> <span class="val">${formatCarriers(carriers)}</span></span>`:''}
+              ${date?`<span class="detail-chip"><span class="label">Data:</span> <span class="val date">${formatDate(date)}</span></span>`:''}
+            </div>
           </div>
           <div class="flight-prices">
             <div class="price-cell">
               <div class="price-label">🏆 Milhas</div>
-              <div class="price-value miles">${x[1].toLocaleString()}</div>
-              <div class="price-sub">+ R$ ${x[2]} taxas</div>
+              <div class="price-value miles">${formatMiles(miles)}</div>
+              <div class="price-sub">+ R$ ${formatTaxes(taxes)} taxas</div>
             </div>
             <div style="display:flex;gap:.35rem;align-items:center">
               ${buyUrl?`<a href="${buyUrl}" target="_blank" rel="noopener" class="buy-btn">Comprar ↗</a>`:''}
-              <button class="alert-mini-btn" onclick="alert('🔔 Alerta criado para ${s.origin}→${s.dest} com ${x[0]}!')">🔔 Alerta</button>
+              <button class="alert-mini-btn" onclick="alert('🔔 Alerta criado para ${s.origin}→${s.dest} com ${prog}!')">🔔</button>
             </div>
           </div>
         </div>
-        <div class="program-tag">${x[0]}</div>
       </div>`;
     }
   }
 
-  if(view!=='award'&&cm){
+  // Cash view
+  if(view!=='economy'&&view!=='premium_economy'&&view!=='business'&&view!=='first_class'&&view!=='combined'&&cm){
     const idx=cab==='business'?5:4;
     const price=cm[idx]||cm[4];
     const a=cm.slice(0,cm.length-2).join(', ');
