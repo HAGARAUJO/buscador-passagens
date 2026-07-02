@@ -2,6 +2,7 @@
 """Auth API — FastAPI + PostgreSQL + Redis."""
 import os, hashlib, hmac, secrets
 from contextlib import asynccontextmanager
+from typing import Optional
 
 import uvicorn
 from fastapi import FastAPI, HTTPException
@@ -34,7 +35,7 @@ def verify_pw(password: str, stored: str) -> bool:
     except (ValueError, TypeError):
         return False
 
-# ── Models ─────────────────
+# ── Pydantic models ────────
 class RegisterRequest(BaseModel):
     name: str
     email: str
@@ -44,10 +45,20 @@ class LoginRequest(BaseModel):
     email: str
     password: str
 
+class ChangePasswordRequest(BaseModel):
+    token: str
+    current_password: str
+    new_password: str
+
+class UpdatePhoneRequest(BaseModel):
+    token: str
+    telefone: str
+
 class UserOut(BaseModel):
     id: int
     name: str
     email: str
+    telefone: Optional[str] = None
     created_at: str
 
 class AuthResponse(BaseModel):
@@ -126,7 +137,7 @@ async def register(req: RegisterRequest):
 
     return AuthResponse(
         token=token,
-        user=UserOut(id=row[0], name=name, email=email, created_at=str(row[1]))
+        user=UserOut(id=row[0], name=name, email=email, telefone=None, created_at=str(row[1]))
     )
 
 @app.post("/api/login", response_model=AuthResponse)
@@ -139,7 +150,7 @@ async def login(req: LoginRequest):
 
     with engine.connect() as conn:
         row = conn.execute(
-            text("SELECT id, nome, email, senha_hash, criado_em FROM usuarios WHERE email = :e"),
+            text("SELECT id, nome, email, senha_hash, telefone, criado_em FROM usuarios WHERE email = :e"),
             {"e": email}
         ).fetchone()
 
@@ -153,7 +164,7 @@ async def login(req: LoginRequest):
 
     return AuthResponse(
         token=token,
-        user=UserOut(id=row[0], name=row[1], email=row[2], created_at=str(row[4]))
+        user=UserOut(id=row[0], name=row[1], email=row[2], telefone=row[4], created_at=str(row[5]))
     )
 
 @app.get("/api/me")
@@ -164,19 +175,67 @@ async def me(token: str):
 
     with engine.connect() as conn:
         row = conn.execute(
-            text("SELECT id, nome, email, criado_em FROM usuarios WHERE id = :id"),
+            text("SELECT id, nome, email, telefone, criado_em FROM usuarios WHERE id = :id"),
             {"id": int(uid)}
         ).fetchone()
 
     if not row:
         raise HTTPException(404, "Usuário não encontrado")
 
-    return UserOut(id=row[0], name=row[1], email=row[2], created_at=str(row[3]))
+    return UserOut(id=row[0], name=row[1], email=row[2], telefone=row[3], created_at=str(row[4]))
 
 @app.post("/api/logout")
 async def logout(token: str):
     await redis_client.delete(f"session:{token}")
     return {"ok": True}
+
+@app.post("/api/change-password")
+async def change_password(req: ChangePasswordRequest):
+    uid = await redis_client.get(f"session:{req.token}")
+    if not uid:
+        raise HTTPException(401, "Token inválido ou expirado")
+
+    with engine.connect() as conn:
+        row = conn.execute(
+            text("SELECT senha_hash FROM usuarios WHERE id = :id"),
+            {"id": int(uid)}
+        ).fetchone()
+
+    if not row:
+        raise HTTPException(404, "Usuário não encontrado")
+
+    if not verify_pw(req.current_password, row[0]):
+        raise HTTPException(400, "Senha atual incorreta")
+
+    if len(req.new_password) < 6:
+        raise HTTPException(400, "Nova senha precisa ter no mínimo 6 caracteres")
+
+    new_hash = hash_pw(req.new_password)
+    with engine.begin() as conn:
+        conn.execute(
+            text("UPDATE usuarios SET senha_hash = :h WHERE id = :id"),
+            {"h": new_hash, "id": int(uid)}
+        )
+
+    return {"ok": True, "message": "Senha alterada com sucesso"}
+
+@app.post("/api/update-phone")
+async def update_phone(req: UpdatePhoneRequest):
+    uid = await redis_client.get(f"session:{req.token}")
+    if not uid:
+        raise HTTPException(401, "Token inválido ou expirado")
+
+    phone = req.telefone.strip()
+    if phone and len(phone) < 8:
+        raise HTTPException(400, "Telefone inválido")
+
+    with engine.begin() as conn:
+        conn.execute(
+            text("UPDATE usuarios SET telefone = :t WHERE id = :id"),
+            {"t": phone or None, "id": int(uid)}
+        )
+
+    return {"ok": True, "message": "Telefone atualizado com sucesso"}
 
 from fastapi.responses import FileResponse
 from award_scraper import fetch_award_data, format_for_frontend, close_pg_pool

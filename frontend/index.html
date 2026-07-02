@@ -58,11 +58,54 @@ input,button,select,textarea{font-family:inherit;outline:none}
 .header-logo{font-weight:800;font-size:1.1rem}
 .header-logo span{color:var(--accent-light)}
 .header-badge{font-size:.55rem;background:rgba(99,102,241,.15);color:var(--accent-light);padding:.15rem .45rem;border-radius:100px;font-weight:600;letter-spacing:.03em}
-.header-right{display:flex;align-items:center;gap:.5rem}
-.header-user{font-size:.8rem;color:var(--text-secondary);display:none}
-.header-user.show{display:block}
-.header-btn{background:none;border:none;color:var(--text-secondary);cursor:pointer;padding:.5rem;border-radius:var(--radius-sm);transition:.2s;font-size:.85rem}
-.header-btn:hover{background:rgba(255,255,255,.04);color:var(--text)}
+.header-right{display:flex;align-items:center;gap:.5rem;position:relative}
+
+/* ─── USER DROPDOWN ─── */
+.user-dropdown{position:relative;display:inline-block}
+.user-trigger{display:flex;align-items:center;gap:.35rem;cursor:pointer;padding:.4rem .65rem;border-radius:var(--radius-sm);transition:.2s;border:1px solid transparent;background:none;color:var(--text-secondary);font-size:.8rem;font-family:inherit}
+.user-trigger:hover{background:rgba(255,255,255,.04);border-color:var(--border);color:var(--text)}
+.user-trigger .arrow{font-size:.55rem;transition:transform .2s;margin-left:.15rem}
+.user-dropdown.open .user-trigger .arrow{transform:rotate(180deg)}
+.user-dropdown.open .user-trigger{border-color:var(--accent);background:rgba(99,102,241,.08);color:var(--accent-light)}
+.user-menu{position:absolute;top:calc(100% + 4px);right:0;min-width:180px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 12px 40px rgba(0,0,0,.4);opacity:0;visibility:hidden;transform:translateY(-4px);transition:.2s;z-index:200;overflow:hidden}
+.user-dropdown.open .user-menu{opacity:1;visibility:visible;transform:translateY(0)}
+.user-menu-item{display:flex;align-items:center;gap:.5rem;padding:.6rem .85rem;font-size:.8rem;color:var(--text-secondary);cursor:pointer;transition:.1s;border:none;background:none;width:100%;text-align:left;font-family:inherit}
+.user-menu-item:hover{background:rgba(99,102,241,.08);color:var(--text)}
+.user-menu-item .ico{font-size:1rem}
+.user-menu-divider{height:1px;background:var(--border);margin:.25rem 0}
+.user-menu-item.logout{color:var(--red)}
+.user-menu-item.logout:hover{background:rgba(239,68,68,.08);color:var(--red)}
+
+/* ─── ACCOUNT MODAL ─── */
+.modal-overlay{position:fixed;inset:0;z-index:900;display:none;align-items:center;justify-content:center;background:rgba(5,8,22,.85);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);animation:fadeIn .3s ease}
+.modal-overlay.active{display:flex}
+.modal-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:2rem;width:90%;max-width:440px;animation:slideUp .4s cubic-bezier(.16,1,.3,1);max-height:90vh;overflow-y:auto}
+.modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem}
+.modal-header h2{font-size:1.1rem;font-weight:700}
+.modal-close{background:none;border:none;color:var(--text-tertiary);font-size:1.3rem;cursor:pointer;padding:.25rem;transition:.2s}
+.modal-close:hover{color:var(--text)}
+.modal-section{margin-bottom:1.5rem}
+.modal-section:last-child{margin-bottom:0}
+.modal-section-title{font-size:.7rem;color:var(--text-tertiary);text-transform:uppercase;font-weight:700;letter-spacing:.06em;margin-bottom:.75rem}
+.modal-field{display:flex;flex-direction:column;gap:.3rem;margin-bottom:.75rem}
+.modal-field label{font-size:.7rem;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.05em}
+.modal-field input,.modal-field select{padding:.65rem .8rem;background:rgba(10,14,39,.6);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:.85rem;transition:.2s}
+.modal-field input:focus,.modal-field select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(99,102,241,.12)}
+.modal-field input::placeholder{color:var(--text-tertiary)}
+.modal-field input:disabled{opacity:.5;cursor:not-allowed}
+.modal-field .phone-input{display:flex;gap:.5rem}
+.modal-field .phone-input select{flex:0 0 100px}
+.modal-field .phone-input input{flex:1}
+.modal-btn{padding:.7rem 1.25rem;background:linear-gradient(135deg,var(--accent),#4f46e5);border:none;border-radius:var(--radius-sm);color:#fff;font-weight:600;font-size:.85rem;cursor:pointer;transition:.2s}
+.modal-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(99,102,241,.25)}
+.modal-btn:active{transform:scale(.97)}
+.modal-btn.secondary{background:rgba(255,255,255,.04);color:var(--text-secondary)}
+.modal-btn.secondary:hover{background:rgba(255,255,255,.08);color:var(--text);box-shadow:none}
+.modal-msg{font-size:.75rem;padding:.4rem .65rem;border-radius:var(--radius-sm);margin-bottom:.75rem;display:none}
+.modal-msg.error{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:var(--red);display:block}
+.modal-msg.success{background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2);color:var(--green);display:block}
+.modal-field select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='%2364748b'%3E%3Cpath d='M1 1l5 5 5-5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right .65rem center;padding-right:2rem;-webkit-appearance:none;appearance:none}
+.modal-field select option{background:var(--surface);color:var(--text)}
 
 /* ─── HERO ─── */
 .hero{text-align:center;padding:2rem 1rem 1.5rem;max-width:960px;margin:0 auto;width:100%}
@@ -157,10 +200,6 @@ input,button,select,textarea{font-family:inherit;outline:none}
 .filter-check.active{background:rgba(99,102,241,.12);border-color:rgba(99,102,241,.3);color:var(--accent-light)}
 .filter-check .dot{width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.6}
 
-/* ─── BUY BUTTON ─── */
-.buy-btn{font-size:.65rem;padding:.3rem .65rem;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.2);border-radius:100px;color:var(--green);cursor:pointer;transition:.2s;font-family:inherit;text-decoration:none;display:inline-block;line-height:1.4}
-.buy-btn:hover{background:rgba(34,197,94,.2);transform:translateY(-1px)}
-
 /* ─── ALERTS BANNER ─── */
 .alert-banner{background:linear-gradient(135deg,rgba(99,102,241,.05),rgba(139,92,246,.05));border:1px solid rgba(99,102,241,.1);border-radius:var(--radius);padding:1rem;margin-bottom:1.5rem}
 .alert-banner h3{font-size:.85rem;margin-bottom:.25rem}
@@ -200,7 +239,9 @@ input,button,select,textarea{font-family:inherit;outline:none}
   .deals-section{padding:0 .75rem 1.5rem}
   .deal-card{flex-direction:column;align-items:flex-start}
   .deal-right{text-align:left;width:100%}
-  .header-user.show{font-size:.7rem;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .modal-card{padding:1.5rem;border-radius:var(--radius)}
+  .modal-field .phone-input{flex-direction:column}
+  .modal-field .phone-input select{flex:1}
 }
 @media(max-width:400px){
   .hero{padding:1.25rem .75rem 1rem}
@@ -252,18 +293,94 @@ input,button,select,textarea{font-family:inherit;outline:none}
   </div>
 </div>
 
+<!-- ═══════════ ACCOUNT MODAL ═══════════ -->
+<div class="modal-overlay" id="accountModal">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h2>👤 Minha Conta</h2>
+      <button class="modal-close" onclick="closeAccountModal()">✕</button>
+    </div>
+    <div class="modal-msg" id="accountMsg"></div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">📧 Email</div>
+      <div class="modal-field">
+        <input type="email" id="accountEmail" disabled>
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">📱 Telefone (para alertas)</div>
+      <div class="modal-field">
+        <label>Número com código do país</label>
+        <div class="phone-input">
+          <select id="phoneCountry">
+            <option value="55">🇧🇷 +55</option>
+            <option value="1">🇺🇸 +1</option>
+            <option value="44">🇬🇧 +44</option>
+            <option value="351">🇵🇹 +351</option>
+            <option value="34">🇪🇸 +34</option>
+            <option value="33">🇫🇷 +33</option>
+            <option value="49">🇩🇪 +49</option>
+            <option value="39">🇮🇹 +39</option>
+            <option value="54">🇦🇷 +54</option>
+            <option value="56">🇨🇱 +56</option>
+            <option value="52">🇲🇽 +52</option>
+          </select>
+          <input type="tel" id="accountPhone" placeholder="(11) 99999-9999">
+        </div>
+      </div>
+      <button class="modal-btn" onclick="savePhone()">💾 Salvar Telefone</button>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">🔑 Redefinir Senha</div>
+      <div class="modal-field">
+        <label>Senha atual</label>
+        <input type="password" id="currPass" placeholder="Digite sua senha atual">
+      </div>
+      <div class="modal-field">
+        <label>Nova senha</label>
+        <input type="password" id="newPass" placeholder="Mínimo 6 caracteres" minlength="6">
+      </div>
+      <div class="modal-field">
+        <label>Confirmar nova senha</label>
+        <input type="password" id="confirmPass" placeholder="Repita a nova senha">
+      </div>
+      <button class="modal-btn" onclick="changePassword()">🔑 Alterar Senha</button>
+    </div>
+
+    <div style="display:flex;gap:.5rem;margin-top:1rem;justify-content:flex-end">
+      <button class="modal-btn secondary" onclick="closeAccountModal()">Fechar</button>
+    </div>
+  </div>
+</div>
+
 <!-- ═══════════ APP ═══════════ -->
 <div class="app" id="app">
 
 <header class="header">
   <div class="header-inner">
     <div class="header-left">
-      <span class="header-logo">🛩️ <span>Fly</span>Tracker</span>
+      <span class="header-logo">🛩️ <span>Buscador de</span> Passagens</span>
       <span class="header-badge">BETA</span>
     </div>
     <div class="header-right">
-      <span class="header-user show" id="userName"></span>
-      <button class="header-btn" onclick="logout()" title="Sair">⏻</button>
+      <div class="user-dropdown" id="userDropdown">
+        <button class="user-trigger" onclick="toggleDropdown()">
+          <span id="userNameDisplay"></span>
+          <span class="arrow">▼</span>
+        </button>
+        <div class="user-menu">
+          <button class="user-menu-item" onclick="openAccountModal();closeDropdown()">
+            <span class="ico">👤</span> Conta
+          </button>
+          <div class="user-menu-divider"></div>
+          <button class="user-menu-item logout" onclick="logout()">
+            <span class="ico">🚪</span> Sair
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </header>
@@ -363,7 +480,7 @@ let AWARD={
 "GIG-MAD":{economy:[["Smiles",42090,250,"medium"],["TudoAzul",44120,250,"high"],["LATAM Pass",47130,250,"medium"],["Iberia",35760,300,"high"]],business:[["Smiles",89460,400,"medium"],["TudoAzul",94210,400,"medium"],["LATAM Pass",99850,400,"low"],["Iberia",63920,480,"high"]]},
 "GIG-LIS":{economy:[["Smiles",36980,250,"high"],["TudoAzul",38970,250,"high"],["LATAM Pass",41980,250,"medium"],["TAP",31860,300,"high"]],business:[["Smiles",78870,400,"high"],["TudoAzul",83970,400,"medium"],["LATAM Pass",89870,400,"low"],["TAP",58270,480,"high"]]},
 "GRU-ORD":{economy:[["Smiles",42950,180,"medium"],["TudoAzul",43960,180,"medium"],["LATAM Pass",47080,180,"medium"],["United",36780,216,"high"],["AAdvantage",36780,216,"medium"]],business:[["Smiles",89450,280,"medium"],["TudoAzul",94380,280,"medium"],["LATAM Pass",99850,280,"low"],["United",73450,336,"high"]]},
-"GRU-MCO":{economy:[["Smiles",34980,180,"high"],["TudoAzul",36120,180,"high"],["LATAM Pass",39120,180,"medium"],["AAdvantage",28980,216,"high"],["Delta",31450,216,"medium"],["United",32390,216,"high"]],business:[["Smiles",79650,280,"high"],["TudoAzol",83720,280,"medium"],["LATAM Pass",89530,280,"low"],["AAdvantage",56320,336,"medium"]]}
+"GRU-MCO":{economy:[["Smiles",34980,180,"high"],["TudoAzul",36120,180,"high"],["LATAM Pass",39120,180,"medium"],["AAdvantage",28980,216,"high"],["Delta",31450,216,"medium"],["United",32390,216,"high"]],business:[["Smiles",79650,280,"high"],["TudoAzul",83720,280,"medium"],["LATAM Pass",89530,280,"low"],["AAdvantage",56320,336,"medium"]]}
 };
 let COMM={
 "GIG-GRU":["LATAM","GOL","Azul","R$ 289","R$ 899"],
@@ -404,23 +521,23 @@ async function loadAPIData(){
   }
 }
 
-// ─── BUY LINKS ───
-const BUY_LINKS={
-  "Smiles":"https://www.smiles.com.br/passagens",
-  "TudoAzul":"https://www.voeazul.com.br/clube-tudoazul/milhas",
-  "LATAM Pass":"https://www.latamairlines.com/br/pt/milhas/resgate",
-  "AAdvantage":"https://www.aa.com/award",
-  "Delta SkyMiles":"https://www.delta.com/award",
-  "United MileagePlus":"https://www.united.com/award",
-  "Flying Blue":"https://www.flyingblue.com/",
-  "BA Avios":"https://www.britishairways.com/ba-redeem",
-  "Iberia Plus":"https://www.iberia.com/award",
-  "TAP Miles&Go":"https://www.flytap.com/miles-and-go"
-};
-
 let view='combined',isLogin=true,currentUser=null;
 let activePrograms=null;
 const API='';
+
+// ─── DROPDOWN ───
+function toggleDropdown(){
+  const dd=document.getElementById('userDropdown');
+  dd.classList.toggle('open');
+}
+function closeDropdown(){
+  document.getElementById('userDropdown').classList.remove('open');
+}
+// Close dropdown on outside click
+document.addEventListener('click',function(e){
+  const dd=document.getElementById('userDropdown');
+  if(!dd.contains(e.target)) dd.classList.remove('open');
+});
 
 // ─── AUTH ───
 function toggleAuthMode(){
@@ -450,8 +567,8 @@ async function handleAuth(e){
       const d=await r.json();
       if(!r.ok){err.textContent=d.detail||'Erro ao fazer login';err.style.display='block';return}
       currentUser=d.user;
-      localStorage.setItem('flytracker_token',d.token);
-      document.getElementById('userName').textContent=d.user.name;
+      localStorage.setItem('buscador_token',d.token);
+      document.getElementById('userNameDisplay').textContent=d.user.name;
       enterApp();
     }catch(e){err.textContent='Erro de conexão com o servidor';err.style.display='block'}
   }else{
@@ -465,9 +582,9 @@ async function handleAuth(e){
       const d=await r.json();
       if(!r.ok){err.textContent=d.detail||'Erro ao criar conta';err.style.display='block';return}
       currentUser=d.user;
-      localStorage.setItem('flytracker_token',d.token);
+      localStorage.setItem('buscador_token',d.token);
       ok.textContent='Conta criada com sucesso!';ok.style.display='block';
-      setTimeout(()=>{document.getElementById('userName').textContent=d.user.name;enterApp()},600);
+      setTimeout(()=>{document.getElementById('userNameDisplay').textContent=d.user.name;enterApp()},600);
     }catch(e){err.textContent='Erro de conexão com o servidor';err.style.display='block'}
   }
 }
@@ -476,20 +593,108 @@ function enterApp(){
   document.getElementById('authOverlay').style.display='none';
   document.body.classList.remove('auth-open');
   document.getElementById('app').classList.add('active');
-  document.getElementById('userName').classList.add('show');
 }
 
 async function logout(){
-  const token=localStorage.getItem('flytracker_token');
+  const token=localStorage.getItem('buscador_token');
   if(token){try{await fetch(API+'/api/logout?token='+encodeURIComponent(token),{method:'POST'})}catch(e){}}
-  localStorage.removeItem('flytracker_token');
+  localStorage.removeItem('buscador_token');
   currentUser=null;
   document.getElementById('app').classList.remove('active');
   document.getElementById('authOverlay').style.display='flex';
   document.body.classList.add('auth-open');
   document.getElementById('authEmail').value='';
   document.getElementById('authPass').value='';
-  document.getElementById('userName').classList.remove('show');
+}
+
+// ─── ACCOUNT MODAL ───
+async function openAccountModal(){
+  const token=localStorage.getItem('buscador_token');
+  if(!token) return;
+  document.getElementById('accountMsg').style.display='none';
+  document.getElementById('accountModal').classList.add('active');
+
+  // Reset fields
+  document.getElementById('currPass').value='';
+  document.getElementById('newPass').value='';
+  document.getElementById('confirmPass').value='';
+
+  try{
+    const r=await fetch(API+'/api/me?token='+encodeURIComponent(token));
+    if(r.ok){
+      const user=await r.json();
+      document.getElementById('accountEmail').value=user.email;
+      // Parse phone
+      if(user.telefone&&user.telefone.length>0){
+        for(const opt of document.getElementById('phoneCountry').options){
+          if(user.telefone.startsWith(opt.value)){
+            opt.selected=true;
+            document.getElementById('accountPhone').value=user.telefone.slice(opt.value.length);
+            break;
+          }
+        }
+      }else{
+        document.getElementById('accountPhone').value='';
+      }
+    }
+  }catch(e){}
+}
+
+function closeAccountModal(){
+  document.getElementById('accountModal').classList.remove('active');
+}
+
+async function savePhone(){
+  const token=localStorage.getItem('buscador_token');
+  if(!token) return;
+  const country=document.getElementById('phoneCountry').value;
+  const phone=document.getElementById('accountPhone').value.replace(/\D/g,'');
+  const fullPhone=country+phone;
+  const msg=document.getElementById('accountMsg');
+  msg.style.display='none';
+
+  if(phone.length<8){msg.className='modal-msg error';msg.textContent='Telefone inválido';msg.style.display='block';return}
+
+  try{
+    const r=await fetch(API+'/api/update-phone',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({token,telefone:fullPhone})
+    });
+    const d=await r.json();
+    if(!r.ok){msg.className='modal-msg error';msg.textContent=d.detail||'Erro ao salvar';}else{
+      msg.className='modal-msg success';msg.textContent='Telefone salvo com sucesso!';
+    }
+    msg.style.display='block';
+  }catch(e){msg.className='modal-msg error';msg.textContent='Erro de conexão';msg.style.display='block'}
+}
+
+async function changePassword(){
+  const token=localStorage.getItem('buscador_token');
+  if(!token) return;
+  const curr=document.getElementById('currPass').value;
+  const np=document.getElementById('newPass').value;
+  const confirm=document.getElementById('confirmPass').value;
+  const msg=document.getElementById('accountMsg');
+  msg.style.display='none';
+
+  if(!curr){msg.className='modal-msg error';msg.textContent='Digite sua senha atual';msg.style.display='block';return}
+  if(np.length<6){msg.className='modal-msg error';msg.textContent='Nova senha precisa ter no mínimo 6 caracteres';msg.style.display='block';return}
+  if(np!==confirm){msg.className='modal-msg error';msg.textContent='As senhas não conferem';msg.style.display='block';return}
+
+  try{
+    const r=await fetch(API+'/api/change-password',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({token,current_password:curr,new_password:np})
+    });
+    const d=await r.json();
+    if(!r.ok){msg.className='modal-msg error';msg.textContent=d.detail||'Erro ao alterar senha';}else{
+      msg.className='modal-msg success';msg.textContent='Senha alterada com sucesso!';
+      document.getElementById('currPass').value='';
+      document.getElementById('newPass').value='';
+      document.getElementById('confirmPass').value='';
+    }
+    msg.style.display='block';
+  }catch(e){msg.className='modal-msg error';msg.textContent='Erro de conexão';msg.style.display='block'}
 }
 
 // ─── APP ───
@@ -509,7 +714,6 @@ function renderFilters(){
     bar.style.display='none';
     return;
   }
-  // In combined view, collect programs from all cabin types
   let allItems=[];
   if(view==='combined'){
     for(const c of['economy','premium_economy','business','first_class']){
@@ -549,7 +753,6 @@ function doSearch(){
 const CABIN_LABELS={economy:'Econômica',premium_economy:'Premium Econ',business:'Executiva',first_class:'Primeira'};
 const CABIN_ICONS={economy:'🪑',premium_economy:'⭐',business:'💼',first_class:'👑'};
 
-// Helper: get field from item (handles both array and object formats)
 function itemVal(item, idx, key){
   if(Array.isArray(item)) return item[idx];
   return item[key];
@@ -575,7 +778,6 @@ function render(){
     for(const c of cabOrder){
       let items=aw[c];
       if(!items||!items.length) continue;
-      // Sort by miles
       if(Array.isArray(items[0])) items=[...items].sort((a,b)=>a[1]-b[1]);
       else items=[...items].sort((a,b)=>a.miles-b.miles);
       if(activePrograms) items=items.filter(x=>itemVal(x,0,'program')&&activePrograms.includes(itemVal(x,0,'program')));
@@ -589,7 +791,6 @@ function render(){
         const carriers=Array.isArray(x)?null:itemVal(x,null,'carriers');
         const date=Array.isArray(x)?null:itemVal(x,null,'date');
         const cls='avail-'+(avail||'low');
-        const buyUrl=(BUY_LINKS[prog]||'').replace(/\{o\}/g,s.origin).replace(/\{d\}/g,s.dest);
         html+=`<div class="flight-card compact">
           <div class="flight-main">
             <div class="flight-info">
@@ -620,7 +821,6 @@ function render(){
                 <div class="price-sub">+ R$ ${formatTaxes(taxes)} taxas</div>
               </div>
               <div style="display:flex;gap:.35rem;align-items:center">
-                ${buyUrl?`<a href="${buyUrl}" target="_blank" rel="noopener" class="buy-btn">Comprar ↗</a>`:''}
                 <button class="alert-mini-btn" onclick="alert('🔔 Alerta criado para ${s.origin}→${s.dest} com ${prog}!')">🔔</button>
               </div>
             </div>
@@ -630,9 +830,9 @@ function render(){
     }
   }
 
-  // Single cabin view (economy, premium_economy, business, first_class)
+  // Single cabin view
   if(view!=='combined'&&view!=='cash'&&aw){
-    const c=view; // view name matches cabin key
+    const c=view;
     let items=aw[c]||(view==='economy'?aw.economy:null)||[];
     if(!items||!items.length) items=aw.economy||[];
     if(Array.isArray(items[0])) items=[...items].sort((a,b)=>a[1]-b[1]);
@@ -648,7 +848,6 @@ function render(){
       const carriers=Array.isArray(x)?null:itemVal(x,null,'carriers');
       const date=Array.isArray(x)?null:itemVal(x,null,'date');
       const cls='avail-'+(avail||'low');
-      const buyUrl=(BUY_LINKS[prog]||'').replace(/\{o\}/g,s.origin).replace(/\{d\}/g,s.dest);
       html+=`<div class="flight-card compact">
         <div class="flight-main">
           <div class="flight-info">
@@ -679,7 +878,6 @@ function render(){
               <div class="price-sub">+ R$ ${formatTaxes(taxes)} taxas</div>
             </div>
             <div style="display:flex;gap:.35rem;align-items:center">
-              ${buyUrl?`<a href="${buyUrl}" target="_blank" rel="noopener" class="buy-btn">Comprar ↗</a>`:''}
               <button class="alert-mini-btn" onclick="alert('🔔 Alerta criado para ${s.origin}→${s.dest} com ${prog}!')">🔔</button>
             </div>
           </div>
@@ -735,21 +933,20 @@ document.getElementById('programsList').innerHTML=PROGS.map(p=>`<span class="pro
 
 // Init — check saved session first
 (async function(){
-  const token=localStorage.getItem('flytracker_token');
+  const token=localStorage.getItem('buscador_token');
   if(token){
     try{
       const r=await fetch(API+'/api/me?token='+encodeURIComponent(token));
       if(r.ok){
         const user=await r.json();
         currentUser=user;
-        document.getElementById('userName').textContent=user.name;
+        document.getElementById('userNameDisplay').textContent=user.name;
         document.body.classList.remove('auth-open');
         document.getElementById('app').classList.add('active');
-        document.getElementById('userName').classList.add('show');
         return;
       }
     }catch(e){}
-    localStorage.removeItem('flytracker_token');
+    localStorage.removeItem('buscador_token');
   }
   document.body.classList.add('auth-open');
 })();

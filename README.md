@@ -30,4 +30,4 @@ Alertas de award disponível via WhatsApp — **nenhuma ferramenta brasileira fa
 
 ## Repositório
 
-Migrado para `composio-mcp-flytracker` — parte do ecossistema Composio MCP.
+Migrado para `buscador-passagens` — Buscador de Passagens.
