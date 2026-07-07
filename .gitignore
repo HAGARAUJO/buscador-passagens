@@ -27,3 +27,7 @@ node_modules/
 
 # Logs
 *.log
+
+# Spec Kit (local only, not pushed to GitHub)
+.specify/
+spec-kit/
